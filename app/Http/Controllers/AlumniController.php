@@ -25,7 +25,7 @@ class AlumniController extends Controller
             'email' => ['nullable', 'email'],
             'no_hp' => ['nullable', 'string', 'max:30'],
             'linkedin' => ['nullable', 'url'],
-            'instagram' => ['nullable', 'url'],
+            'instagram' => ['nullable', 'string', 'max:255'],
             'facebook' => ['nullable', 'url'],
             'tiktok' => ['nullable', 'url'],
             'tempat_kerja' => ['nullable', 'string', 'max:255'],

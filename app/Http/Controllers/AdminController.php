@@ -4,17 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Alumni;
 use App\Support\AlumniCsvImporter;
+use App\Support\AlumniProfilingMetrics;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
-    public function dashboard(Request $request)
+    private const SEARCH_PLATFORMS = ['google', 'linkedin', 'instagram', 'social'];
+
+    public function dashboard(Request $request, AlumniProfilingMetrics $metrics)
     {
         $search = trim((string) $request->query('search', ''));
         $filter = trim((string) $request->query('filter', ''));
 
-        $data = Alumni::query()
-            ->with('user')
+        $baseQuery = Alumni::query()
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('nama', 'like', "%{$search}%")
@@ -43,12 +45,17 @@ class AdminController extends Controller
                         $contact->whereNotNull('no_hp')->where('no_hp', '!=', '');
                     });
                 });
-            })
+            });
+
+        $data = (clone $baseQuery)
+            ->with('user')
             ->orderBy('nama')
             ->paginate(25)
             ->withQueryString();
 
-        return view('dashboard_admin', compact('data', 'search', 'filter'));
+        $profilingSummary = $metrics->summarize(clone $baseQuery);
+
+        return view('dashboard_admin', compact('data', 'search', 'filter', 'profilingSummary'));
     }
 
     public function import(Request $request, AlumniCsvImporter $importer)
@@ -71,12 +78,24 @@ class AdminController extends Controller
 
     public function show(Alumni $alumni)
     {
-        return view('admin_alumni_detail', compact('alumni'));
+        $verificationEnabled = Alumni::supportsProfilingVerification();
+        $searchTrackingEnabled = Alumni::supportsSearchTracking();
+
+        return view('admin_alumni_detail', compact('alumni', 'verificationEnabled', 'searchTrackingEnabled'));
+    }
+
+    public function redirectSearch(Alumni $alumni, string $platform)
+    {
+        abort_unless(in_array($platform, self::SEARCH_PLATFORMS, true), 404);
+
+        $alumni->rememberSearch($platform);
+
+        return redirect()->away($alumni->searchUrl($platform));
     }
 
     public function update(Request $request, Alumni $alumni)
     {
-        $data = $request->validate([
+        $rules = [
             'nama' => ['required', 'string', 'max:255'],
             'nim' => ['nullable', 'string', 'max:50'],
             'tahun_masuk' => ['nullable', 'string', 'max:20'],
@@ -86,7 +105,7 @@ class AdminController extends Controller
             'email' => ['nullable', 'email'],
             'no_hp' => ['nullable', 'string', 'max:30'],
             'linkedin' => ['nullable', 'url'],
-            'instagram' => ['nullable', 'url'],
+            'instagram' => ['nullable', 'string', 'max:255'],
             'facebook' => ['nullable', 'url'],
             'tiktok' => ['nullable', 'url'],
             'tempat_kerja' => ['nullable', 'string', 'max:255'],
@@ -95,9 +114,22 @@ class AdminController extends Controller
             'status_kerja' => ['nullable', 'in:PNS,Swasta,Wirausaha'],
             'sosmed_tempat_kerja' => ['nullable', 'url'],
             'consent' => ['nullable'],
-        ]);
+        ];
+
+        if (Alumni::supportsProfilingVerification()) {
+            $rules['verified_items'] = ['nullable', 'array'];
+            $rules['verified_items.*'] = ['string', 'in:' . implode(',', Alumni::PROFILE_ITEMS)];
+            $rules['verification_notes'] = ['nullable', 'string'];
+            $rules['evidence_links'] = ['nullable', 'string'];
+        }
+
+        $data = $request->validate($rules);
 
         $data['consent'] = $request->has('consent');
+
+        if (Alumni::supportsProfilingVerification()) {
+            $data['verified_items'] = array_values($data['verified_items'] ?? []);
+        }
 
         $alumni->update($data);
 

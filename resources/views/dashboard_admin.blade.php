@@ -30,12 +30,14 @@
         <div class="stat-value">{{ number_format($data->total(), 0, ',', '.') }}</div>
     </div>
     <div class="stat">
-        <div class="stat-label">Halaman Aktif</div>
-        <div class="stat-value">{{ $data->currentPage() }}</div>
+        <div class="stat-label">Coverage Dataset</div>
+        <div class="stat-value">{{ number_format($profilingSummary['coverage_percent'], 4, ',', '.') }}%</div>
+        <div class="muted" style="margin-top:8px;">{{ number_format($profilingSummary['found_total'], 0, ',', '.') }} item ditemukan</div>
     </div>
     <div class="stat">
-        <div class="stat-label">Per Halaman</div>
-        <div class="stat-value">{{ $data->count() }}</div>
+        <div class="stat-label">Accuracy Dataset</div>
+        <div class="stat-value">{{ number_format($profilingSummary['accuracy_percent'], 4, ',', '.') }}%</div>
+        <div class="muted" style="margin-top:8px;">{{ number_format($profilingSummary['verified_total'], 0, ',', '.') }} item terverifikasi</div>
     </div>
 </div>
 
@@ -125,6 +127,7 @@
                     <td>{{ $row->tanggal_lulus }}</td>
                     <td>{{ $row->fakultas }}</td>
                     <td>{{ $row->program_studi }}</td>
+                    @php($profilingQuery = $row->profilingQuery())
                     <td>
                         @if($row->linkedin)
                             <div class="stack" style="gap:8px; align-items:flex-start;">
@@ -134,16 +137,16 @@
                         @else
                             <div class="stack" style="gap:8px; align-items:flex-start;">
                                 <span class="pill" style="display:flex; justify-content:center; width:128px; padding:6px 10px; font-size:.82rem; background:rgba(217,143,63,.12); color:#8a5b21;">Kosong</span>
-                                <a href="https://www.linkedin.com/search/results/all/?keywords={{ urlencode($row->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:128px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari LinkedIn</a>
+                                <a href="{{ route('admin.alumni.search', [$row, 'linkedin']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:128px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari LinkedIn</a>
                             </div>
                         @endif
                     </td>
                     <td>
                         <div class="stack" style="gap:8px; align-items:flex-start;">
-                            <a href="https://www.google.com/search?q={{ urlencode($row->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Google</a>
-                            <a href="https://www.facebook.com/search/top/?q={{ urlencode($row->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Facebook</a>
-                            <a href="https://www.instagram.com/explore/search/keyword/?q={{ urlencode($row->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Instagram</a>
-                            <a href="https://www.tiktok.com/search?q={{ urlencode($row->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari TikTok</a>
+                            <a href="{{ route('admin.alumni.search', [$row, 'google']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Google</a>
+                            <a href="{{ route('admin.alumni.search', [$row, 'linkedin']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari LinkedIn</a>
+                            <a href="{{ route('admin.alumni.search', [$row, 'instagram']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Instagram</a>
+                            <a href="{{ route('admin.alumni.search', [$row, 'social']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary" style="width:140px; padding:10px 12px; font-size:.88rem; white-space:nowrap;">Cari Sosmed</a>
                         </div>
                     </td>
                     <td>

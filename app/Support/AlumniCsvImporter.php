@@ -18,7 +18,7 @@ class AlumniCsvImporter
             throw new \RuntimeException("Gagal membuka file: {$path}");
         }
 
-        $header = fgetcsv($handle);
+        $header = fgetcsv($handle, 0, ',', '"', '\\');
 
         if ($header === false) {
             fclose($handle);
@@ -40,7 +40,7 @@ class AlumniCsvImporter
         $batchSize = 1000;
         $processed = 0;
 
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
             if (count($row) !== count($header)) {
                 continue;
             }

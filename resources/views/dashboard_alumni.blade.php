@@ -41,7 +41,7 @@
         </div>
         <div>
             <label>Instagram</label>
-            <input type="url" name="instagram" value="{{ old('instagram', $alumni->instagram) }}">
+            <input type="text" name="instagram" value="{{ old('instagram', $alumni->instagram) }}" placeholder="username_instagram">
         </div>
         <div>
             <label>Facebook</label>

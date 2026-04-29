@@ -38,18 +38,6 @@
             <button type="submit">Login</button>
         </form>
 
-        <div class="grid" style="margin-top:20px;">
-            <div class="meta-row">
-                <small>Akun Admin</small>
-                <strong>admin@example.com</strong>
-                <div class="muted">Password: admin123</div>
-            </div>
-            <div class="meta-row">
-                <small>Akun Alumni</small>
-                <strong>alumni@example.com</strong>
-                <div class="muted">Password: alumni123</div>
-            </div>
-        </div>
     </section>
 </div>
 @endsection

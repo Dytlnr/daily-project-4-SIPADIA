@@ -28,6 +28,7 @@
 
 <div class="detail-layout">
     <aside class="detail-meta">
+        @php($profilingQuery = $alumni->profilingQuery())
         <div class="meta-row">
             <small>NIM</small>
             <strong>{{ $alumni->nim ?: '-' }}</strong>
@@ -45,28 +46,53 @@
             <strong>{{ $alumni->email || $alumni->no_hp || $alumni->tempat_kerja ? 'Sudah mulai diisi' : 'Masih kosong' }}</strong>
         </div>
         <div class="meta-row">
+            <small>Progress Profiling</small>
+            <strong>{{ $alumni->foundProfileItemsCount() }}/8 ditemukan</strong>
+            <strong>{{ $alumni->verifiedProfileItemsCount() }}/8 terverifikasi</strong>
+        </div>
+        <div class="meta-row">
             <small>LinkedIn</small>
             @if($alumni->linkedin)
                 <strong>Akun tersedia</strong>
                 <div class="stack" style="margin-top:10px; gap:10px;">
                     <a href="{{ $alumni->linkedin }}" target="_blank" rel="noopener noreferrer" class="btn">Buka LinkedIn</a>
-                    <a href="https://www.linkedin.com/search/results/all/?keywords={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari Lagi di LinkedIn</a>
+                    <a href="{{ route('admin.alumni.search', [$alumni, 'linkedin']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari Lagi di LinkedIn</a>
                 </div>
             @else
                 <strong>Belum ada link</strong>
                 <div style="margin-top:10px;">
-                    <a href="https://www.linkedin.com/search/results/all/?keywords={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari LinkedIn</a>
+                    <a href="{{ route('admin.alumni.search', [$alumni, 'linkedin']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari LinkedIn</a>
                 </div>
             @endif
         </div>
         <div class="meta-row">
             <small>Pencarian Publik</small>
+            <div class="muted" style="margin-top:8px; font-size:.92rem;">Query: {{ $profilingQuery }}</div>
             <div class="stack" style="margin-top:10px; gap:10px;">
-                <a href="https://www.google.com/search?q={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari di Google</a>
-                <a href="https://www.facebook.com/search/top/?q={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari di Facebook</a>
-                <a href="https://www.instagram.com/explore/search/keyword/?q={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari di Instagram</a>
-                <a href="https://www.tiktok.com/search?q={{ urlencode($alumni->nama) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari di TikTok</a>
+                <a href="{{ route('admin.alumni.search', [$alumni, 'google']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari di Google</a>
+                <a href="{{ route('admin.alumni.search', [$alumni, 'linkedin']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari LinkedIn</a>
+                <a href="{{ route('admin.alumni.search', [$alumni, 'instagram']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari Instagram</a>
+                <a href="{{ route('admin.alumni.search', [$alumni, 'social']) }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Cari Sosmed</a>
             </div>
+            @if($searchTrackingEnabled && $alumni->last_searched_at)
+                <div class="muted" style="margin-top:10px; font-size:.92rem;">
+                    Terakhir dicari: {{ $alumni->last_searched_at->format('d M Y H:i') }}
+                </div>
+            @endif
+            @if($searchTrackingEnabled && $alumni->rememberedSearchUrl('google'))
+                <div class="stack" style="margin-top:10px; gap:10px;">
+                    <a href="{{ $alumni->rememberedSearchUrl('google') }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Buka Google Terakhir</a>
+                    @if($alumni->rememberedSearchUrl('linkedin'))
+                        <a href="{{ $alumni->rememberedSearchUrl('linkedin') }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Buka LinkedIn Terakhir</a>
+                    @endif
+                    @if($alumni->rememberedSearchUrl('instagram'))
+                        <a href="{{ $alumni->rememberedSearchUrl('instagram') }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Buka Instagram Terakhir</a>
+                    @endif
+                    @if($alumni->rememberedSearchUrl('social'))
+                        <a href="{{ $alumni->rememberedSearchUrl('social') }}" target="_blank" rel="noopener noreferrer" class="btn secondary">Buka Sosmed Terakhir</a>
+                    @endif
+                </div>
+            @endif
         </div>
     </aside>
 
@@ -118,7 +144,7 @@
                 </div>
                 <div>
                     <label>Instagram</label>
-                    <input type="url" name="instagram" value="{{ old('instagram', $alumni->instagram) }}">
+                    <input type="text" name="instagram" value="{{ old('instagram', $alumni->instagram) }}" placeholder="username_instagram">
                 </div>
                 <div>
                     <label>Facebook</label>
@@ -153,6 +179,42 @@
                     <label>Alamat Bekerja</label>
                     <textarea name="alamat_kerja">{{ old('alamat_kerja', $alumni->alamat_kerja) }}</textarea>
                 </div>
+                @if($verificationEnabled)
+                    <div class="full">
+                        <label>Checklist Verifikasi Accuracy</label>
+                        <div class="grid" style="margin-top:10px;">
+                            @foreach(\App\Support\AlumniProfilingMetrics::PROFILE_ITEMS as $key => $label)
+                                <label style="display:flex; gap:10px; align-items:flex-start;">
+                                    <input
+                                        type="checkbox"
+                                        name="verified_items[]"
+                                        value="{{ $key }}"
+                                        @checked(in_array($key, old('verified_items', $alumni->verified_items ?? []), true))
+                                        style="width:auto; margin-top:4px;"
+                                    >
+                                    <span>{{ $label }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="muted" style="margin-top:8px; font-size:.92rem;">
+                            Centang hanya jika item sudah dicek benar dari sosial media, website resmi, atau evidence lain.
+                        </div>
+                    </div>
+                    <div class="full">
+                        <label>Link Evidence</label>
+                        <textarea name="evidence_links" placeholder="Satu link per baris">{{ old('evidence_links', $alumni->evidence_links) }}</textarea>
+                    </div>
+                    <div class="full">
+                        <label>Catatan Verifikasi</label>
+                        <textarea name="verification_notes" placeholder="Contoh: LinkedIn cocok dengan nama, prodi, dan riwayat kerja.">{{ old('verification_notes', $alumni->verification_notes) }}</textarea>
+                    </div>
+                @else
+                    <div class="full">
+                        <div class="error" style="margin-bottom:0;">
+                            Fitur verifikasi accuracy belum aktif di database. Jalankan migration terbaru agar checklist, evidence, dan catatan verifikasi bisa dipakai.
+                        </div>
+                    </div>
+                @endif
                 <div class="full">
                     <label>
                         <input type="checkbox" name="consent" value="1" @checked(old('consent', $alumni->consent)) style="width:auto;">

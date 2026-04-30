@@ -10,11 +10,25 @@ use Illuminate\Http\Request;
 class AdminController extends Controller
 {
     private const SEARCH_PLATFORMS = ['google', 'linkedin', 'instagram', 'social'];
+    private const DASHBOARD_FILTERS = [
+        'has_linkedin',
+        'missing_linkedin',
+        'missing_job',
+        'has_job',
+        'has_contact',
+        'missing_contact',
+        'low_profile',
+        'unverified',
+        'has_email',
+        'has_workplace',
+        'has_position',
+    ];
 
     public function dashboard(Request $request, AlumniProfilingMetrics $metrics)
     {
         $search = trim((string) $request->query('search', ''));
         $filter = trim((string) $request->query('filter', ''));
+        $filter = in_array($filter, self::DASHBOARD_FILTERS, true) ? $filter : '';
 
         $baseQuery = Alumni::query()
             ->when($search !== '', function ($query) use ($search) {
@@ -26,26 +40,7 @@ class AdminController extends Controller
                         ->orWhere('tempat_kerja', 'like', "%{$search}%");
                 });
             })
-            ->when($filter === 'has_linkedin', function ($query) {
-                $query->whereNotNull('linkedin')->where('linkedin', '!=', '');
-            })
-            ->when($filter === 'missing_job', function ($query) {
-                $query->where(function ($inner) {
-                    $inner->whereNull('tempat_kerja')
-                        ->orWhere('tempat_kerja', '')
-                        ->orWhereNull('posisi')
-                        ->orWhere('posisi', '');
-                });
-            })
-            ->when($filter === 'has_contact', function ($query) {
-                $query->where(function ($inner) {
-                    $inner->where(function ($contact) {
-                        $contact->whereNotNull('email')->where('email', '!=', '');
-                    })->orWhere(function ($contact) {
-                        $contact->whereNotNull('no_hp')->where('no_hp', '!=', '');
-                    });
-                });
-            });
+            ->when($filter !== '', fn ($query) => $this->applyDashboardFilter($query, $filter));
 
         $data = (clone $baseQuery)
             ->with('user')
@@ -56,6 +51,62 @@ class AdminController extends Controller
         $profilingSummary = $metrics->summarize(clone $baseQuery);
 
         return view('dashboard_admin', compact('data', 'search', 'filter', 'profilingSummary'));
+    }
+
+    private function applyDashboardFilter($query, string $filter): void
+    {
+        match ($filter) {
+            'has_linkedin' => $query->whereNotNull('linkedin')->where('linkedin', '!=', ''),
+            'has_email' => $query->whereNotNull('email')->where('email', '!=', ''),
+            'has_workplace' => $query->whereNotNull('tempat_kerja')->where('tempat_kerja', '!=', ''),
+            'has_position' => $query->whereNotNull('posisi')->where('posisi', '!=', ''),
+            'missing_linkedin' => $query->where(function ($inner) {
+                $inner->whereNull('linkedin')->orWhere('linkedin', '');
+            }),
+            'missing_job' => $query->where(function ($inner) {
+                $inner->whereNull('tempat_kerja')
+                    ->orWhere('tempat_kerja', '')
+                    ->orWhereNull('posisi')
+                    ->orWhere('posisi', '');
+            }),
+            'has_job' => $query->whereNotNull('tempat_kerja')
+                ->where('tempat_kerja', '!=', '')
+                ->whereNotNull('posisi')
+                ->where('posisi', '!=', ''),
+            'has_contact' => $query->where(function ($inner) {
+                $inner->where(function ($contact) {
+                    $contact->whereNotNull('email')->where('email', '!=', '');
+                })->orWhere(function ($contact) {
+                    $contact->whereNotNull('no_hp')->where('no_hp', '!=', '');
+                });
+            }),
+            'missing_contact' => $query->where(function ($inner) {
+                $inner->where(function ($contact) {
+                    $contact->whereNull('email')->orWhere('email', '');
+                })->where(function ($contact) {
+                    $contact->whereNull('no_hp')->orWhere('no_hp', '');
+                });
+            }),
+            'low_profile' => $query->where(function ($inner) {
+                $inner->whereNull('email')
+                    ->orWhere('email', '')
+                    ->orWhereNull('no_hp')
+                    ->orWhere('no_hp', '')
+                    ->orWhereNull('linkedin')
+                    ->orWhere('linkedin', '')
+                    ->orWhereNull('tempat_kerja')
+                    ->orWhere('tempat_kerja', '')
+                    ->orWhereNull('posisi')
+                    ->orWhere('posisi', '');
+            }),
+            'unverified' => Alumni::supportsProfilingVerification()
+                ? $query->where(function ($inner) {
+                    $inner->whereNull('verified_items')
+                        ->orWhereJsonLength('verified_items', 0);
+                })
+                : $query,
+            default => $query,
+        };
     }
 
     public function import(Request $request, AlumniCsvImporter $importer)

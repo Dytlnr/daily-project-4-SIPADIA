@@ -43,7 +43,10 @@
 
 <div class="inline-actions" style="margin-bottom:18px;">
     <a href="{{ route('admin.dashboard', ['filter' => 'has_linkedin', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_linkedin' ? '' : 'secondary' }}">Punya LinkedIn</a>
-    <a href="{{ route('admin.dashboard', ['filter' => 'missing_job', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'missing_job' ? '' : 'secondary' }}">Belum Ada Data Kerja</a>
+    <a href="{{ route('admin.dashboard', ['filter' => 'has_email', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_email' ? '' : 'secondary' }}">Punya Email</a>
+    <a href="{{ route('admin.dashboard', ['filter' => 'has_workplace', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_workplace' ? '' : 'secondary' }}">Punya Tempat Bekerja</a>
+    <a href="{{ route('admin.dashboard', ['filter' => 'has_position', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_position' ? '' : 'secondary' }}">Punya Posisi</a>
+    <a href="{{ route('admin.dashboard', ['filter' => 'has_job', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_job' ? '' : 'secondary' }}">Sudah Ada Data Kerja</a>
     <a href="{{ route('admin.dashboard', ['filter' => 'has_contact', 'search' => $search ?: null]) }}" class="btn {{ $filter === 'has_contact' ? '' : 'secondary' }}">Sudah Ada Kontak</a>
     @if($filter)
         <a href="{{ route('admin.dashboard', ['search' => $search ?: null]) }}" class="btn secondary">Hapus Filter</a>

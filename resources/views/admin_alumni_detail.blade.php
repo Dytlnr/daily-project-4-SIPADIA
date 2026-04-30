@@ -200,14 +200,6 @@
                             Centang hanya jika item sudah dicek benar dari sosial media, website resmi, atau evidence lain.
                         </div>
                     </div>
-                    <div class="full">
-                        <label>Link Evidence</label>
-                        <textarea name="evidence_links" placeholder="Satu link per baris">{{ old('evidence_links', $alumni->evidence_links) }}</textarea>
-                    </div>
-                    <div class="full">
-                        <label>Catatan Verifikasi</label>
-                        <textarea name="verification_notes" placeholder="Contoh: LinkedIn cocok dengan nama, prodi, dan riwayat kerja.">{{ old('verification_notes', $alumni->verification_notes) }}</textarea>
-                    </div>
                 @else
                     <div class="full">
                         <div class="error" style="margin-bottom:0;">

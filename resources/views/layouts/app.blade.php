@@ -231,7 +231,21 @@
             margin-top: 16px;
         }
         .stack { display: grid; gap: 14px; }
-        .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .inline-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            isolation: isolate;
+        }
+        .inline-actions .btn,
+        .inline-actions button {
+            position: relative;
+            z-index: 3;
+            pointer-events: auto;
+        }
         .login-shell {
             min-height: calc(100vh - 80px);
             display: grid;
